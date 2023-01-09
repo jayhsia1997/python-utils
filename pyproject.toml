@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "python-utils"
+version = "0.1.0"
+description = "python utils"
+authors = ["Jay Hsia <jayhsia1997@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+httpx = "*"
+opentelemetry-api = "^1.15.0"
+opentelemetry-sdk = "^1.15.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "*"
+pytest-asyncio = "*"
+pylint = "*"
+respx = "*"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
