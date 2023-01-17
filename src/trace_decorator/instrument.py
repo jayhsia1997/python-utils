@@ -42,6 +42,7 @@ def instrument(
     :param inject_span:
     :return:
     """
+
     def decorator(func):
         """
 
@@ -52,10 +53,26 @@ def instrument(
         name = span_name or func.__qualname__
 
         def _set_semantic_attributes(span: Span, raw_func: Callable):
+            """
+
+            :param span:
+            :param raw_func:
+            :return:
+            """
             span.set_attribute(SpanAttributes.CODE_NAMESPACE, str(raw_func.__module__))  # noqa
             span.set_attribute(SpanAttributes.CODE_FUNCTION, str(raw_func.__qualname__))  # noqa
             span.set_attribute(SpanAttributes.CODE_FILEPATH, str(raw_func.__code__.co_filename))  # noqa
             span.set_attribute(SpanAttributes.CODE_LINENO, str(raw_func.__code__.co_firstlineno))  # noqa
+
+        def _check_func_args_has_span(raw_func: Callable):
+            """
+
+            :param raw_func:
+            :return:
+            """
+            if raw_func.__code__.co_varnames[0] != 'self':  # noqa
+                return '_span' in raw_func.__code__.co_varnames[:raw_func.__code__.co_argcount]  # noqa
+            return '_span' in raw_func.__code__.co_varnames[:raw_func.__code__.co_argcount + 1]  # noqa
 
         @wraps(func)
         def sync_wrapper(*args, **kwargs):
@@ -70,7 +87,7 @@ def instrument(
                 record_exception=record_exception
             ) as span:  # type: Span
                 _set_semantic_attributes(span=span, raw_func=func)
-                if inject_span:
+                if inject_span and _check_func_args_has_span(func):
                     result = func(*args, **kwargs, _span=span)
                 else:
                     result = func(*args, **kwargs)
@@ -89,7 +106,7 @@ def instrument(
                 record_exception=record_exception
             ) as span:  # type: Span
                 _set_semantic_attributes(span=span, raw_func=func)
-                if inject_span:
+                if inject_span and _check_func_args_has_span(func):
                     result = await func(*args, **kwargs, _span=span)
                 else:
                     result = await func(*args, **kwargs)
