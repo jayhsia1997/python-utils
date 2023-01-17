@@ -1,7 +1,7 @@
 """
 telemetry tracer
 """
-import asyncio
+import inspect
 from functools import wraps
 from typing import Callable
 
@@ -70,9 +70,7 @@ def instrument(
             :param raw_func:
             :return:
             """
-            if raw_func.__code__.co_varnames[0] != 'self':  # noqa
-                return '_span' in raw_func.__code__.co_varnames[:raw_func.__code__.co_argcount]  # noqa
-            return '_span' in raw_func.__code__.co_varnames[:raw_func.__code__.co_argcount + 1]  # noqa
+            return "_span" in inspect.signature(raw_func).parameters
 
         @wraps(func)
         def sync_wrapper(*args, **kwargs):
@@ -112,7 +110,7 @@ def instrument(
                     result = await func(*args, **kwargs)
             return result
 
-        wrapper = async_wrapper if asyncio.iscoroutinefunction(func) else sync_wrapper
+        wrapper = async_wrapper if inspect.iscoroutinefunction(func) else sync_wrapper
         return wrapper
 
     return decorator
