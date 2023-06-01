@@ -8,8 +8,8 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.10"
 httpx = "*"
-opentelemetry-api = "^1.15.0"
-opentelemetry-sdk = "^1.15.0"
+opentelemetry-api = "*"
+opentelemetry-sdk = "*"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "*"

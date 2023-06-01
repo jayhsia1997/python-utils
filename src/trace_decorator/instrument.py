@@ -8,18 +8,19 @@ from typing import Callable
 from opentelemetry import trace
 from opentelemetry.sdk.trace import Tracer
 from opentelemetry.semconv.trace import SpanAttributes
-from opentelemetry.trace import Span
+from opentelemetry.trace import Span, SpanKind
 
 
 def instrument(
     *,
     span_name: str = None,
+    kind: SpanKind = SpanKind.INTERNAL,
     record_exception: bool = True,
     existing_tracer: Tracer = None,
     inject_span: bool = False
 ) -> Callable:
     """
-    A decorator to instrument a class or function with an OTEL tracing span.
+    A decorator to instrument a class or function with an open telemetry tracing span.
     Usage Example::
         class Foo:
 
@@ -37,6 +38,7 @@ def instrument(
                 ...
 
     :param span_name:
+    :param kind:
     :param record_exception:
     :param existing_tracer:
     :param inject_span:
@@ -82,13 +84,18 @@ def instrument(
             """
             with tracer.start_as_current_span(
                 name=name,
+                kind=kind,
                 record_exception=record_exception
             ) as span:  # type: Span
                 _set_semantic_attributes(span=span, raw_func=func)
-                if inject_span and _check_func_args_has_span(func):
-                    result = func(*args, **kwargs, _span=span)
-                else:
-                    result = func(*args, **kwargs)
+                try:
+                    if inject_span and _check_func_args_has_span(func):
+                        result = func(*args, **kwargs, _span=span)
+                    else:
+                        result = func(*args, **kwargs)
+                except Exception as exc:
+                    span.set_attribute("Exception", str(exc))
+                    raise exc
             return result
 
         @wraps(func)
@@ -101,13 +108,18 @@ def instrument(
             """
             with tracer.start_as_current_span(
                 name=name,
+                kind=kind,
                 record_exception=record_exception
             ) as span:  # type: Span
                 _set_semantic_attributes(span=span, raw_func=func)
-                if inject_span and _check_func_args_has_span(func):
-                    result = await func(*args, **kwargs, _span=span)
-                else:
-                    result = await func(*args, **kwargs)
+                try:
+                    if inject_span and _check_func_args_has_span(func):
+                        result = await func(*args, **kwargs, _span=span)
+                    else:
+                        result = await func(*args, **kwargs)
+                except Exception as exc:
+                    span.set_attribute("Exception", str(exc))
+                    raise exc
             return result
 
         wrapper = async_wrapper if inspect.iscoroutinefunction(func) else sync_wrapper
