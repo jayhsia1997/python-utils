@@ -56,26 +56,26 @@ class TestTraceDecorator:
         assert current_span.attributes["foo"] == "foo foo" # noqa
         assert current_span.attributes["foo2"] == "foo2 foo2" # noqa
 
-    def test_exeception_recorded_by_span(self):
+    def test_exception_recorded_by_span(self):
         try:
-            self.execption_raising_span()
+            self.exception_raising_span()
         except:
             span = self.span_processor.last_span
             assert span.events
             error_event = span.events[0]
             assert error_event.attributes["exception.message"] is "foo"
 
-    def test_exeception_not_recorded_by_span(self):
+    def test_exception_not_recorded_by_span(self):
         try:
-            self.execption_raising_span_record_exception_false()
+            self.exception_raising_span_record_exception_false()
         except:
             span = self.span_processor.last_span
             assert not span.events
 
     @instrument()
-    def execption_raising_span(self):
+    def exception_raising_span(self):
         raise Exception("foo")
 
     @instrument(record_exception=False)
-    def execption_raising_span_record_exception_false(self):
+    def exception_raising_span_record_exception_false(self):
         raise Exception("foo")
