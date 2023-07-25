@@ -51,6 +51,7 @@ class HttpOptions:
     headers: Optional[dict] = None
     cookies: Optional[dict] = None
     redirects: bool = True
+    verify: bool = True
 
 
 # pylint: disable=missing-function-docstring
@@ -169,7 +170,8 @@ class HttpSession:
         if self._client:
             return True
         self._client = httpx.AsyncClient(
-            timeout=self._options.timeout or self.defaults.timeout
+            timeout=self._options.timeout or self.defaults.timeout,
+            verify=self._options.verify
         )
         await self._client.__aenter__()
         return False
@@ -309,6 +311,11 @@ class HttpSession:
             self._options.json.update(json_data)
         return self
 
+    def verify(self, verify: bool):
+        """verify"""
+        self._options.verify = verify
+        return self
+
     def _log_verbose(self, message: Any, *args):
         if self._options.verbose is False:
             return
@@ -351,7 +358,7 @@ class HttpSession:
                     f'{http_method} Request not to use add_file to add parameters, ignored'
                 )
 
-        elif http_method in ('POST', 'PUT'):
+        elif http_method in ('POST', 'PUT', 'PATCH'):
             if self._options.form:
                 request_params['data'] = self._options.form
             if content := self._options.content:
@@ -386,9 +393,9 @@ class HttpSession:
     def _format_log_response(self, response: httpx.Response):
         esp = time.time() - self._st
         if "application/json" in response.headers.get("content-type", []):
-            return f"{response.status_code} {response.text} ({round(esp * 1000)}ms)"
-        return f"{response.status_code} content-type:{response.headers.get('content-type')}, " \
-               f"content-disposition:{response.headers.get('content-disposition')} ({round(esp * 1000)}ms)"
+            return f"{response.status_code} ({round(esp * 1000)}ms) {response.text}"
+        return f"{response.status_code} ({round(esp * 1000)}ms) content-type:{response.headers.get('content-type')}, " \
+               f"content-disposition:{response.headers.get('content-disposition')}"
 
     @staticmethod
     def _format_returns(response: httpx.Response):
@@ -507,6 +514,10 @@ class HttpSession:
     async def aput(self) -> HttpResponse:
         """aput"""
         return await self.arequest('PUT')
+
+    async def apatch(self) -> HttpResponse:
+        """apatch"""
+        return await self.arequest('PATCH')
 
     async def adelete(self) -> HttpResponse:
         """adelete"""
